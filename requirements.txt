@@ -1,0 +1,12 @@
+# requirements.txt
+fastapi==0.111.0
+uvicorn==0.30.1
+pandas==2.2.2
+numpy==1.26.4
+scikit-learn==1.5.0
+statsmodels==0.14.2
+prophet==1.1.0
+joblib==1.4.2
+prometheus_client==0.20.0
+xgboost==2.0.0
+python-multipart==0.0.9 # Often a dependency for FastAPI if you handle form data
