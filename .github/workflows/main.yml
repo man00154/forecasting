@@ -1,0 +1,79 @@
+# .github/workflows/main.yml
+name: CI/CD Pipeline
+
+# This workflow will run on:
+on:
+  push:
+    branches:
+      - main # Trigger on pushes to the 'main' branch
+  workflow_dispatch: # Allows manual triggering of the workflow from the GitHub UI
+
+jobs:
+  build:
+    runs-on: ubuntu-latest # Use the latest Ubuntu runner
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4 # Action to checkout your repository code
+
+    - name: Set up Docker Buildx
+      # This action sets up Docker Buildx, an enhanced builder for Docker
+      # that enables features like multi-platform builds and caching.
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Hub
+      # This action logs into Docker Hub using provided credentials.
+      # DOCKER_USERNAME and DOCKER_PASSWORD should be stored as GitHub Secrets.
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and push Docker image
+      # This action builds your Docker image and pushes it to Docker Hub.
+      uses: docker/build-push-action@v5
+      with:
+        context: . # The build context is the root of the repository
+        push: true # Push the image to the registry
+        tags: ${{ secrets.DOCKER_USERNAME }}/itsm-forecaster:latest # Tag the image
+        cache-from: type=gha # Use GitHub Actions cache for faster builds
+        cache-to: type=gha,mode=max # Store build cache in GitHub Actions cache
+
+  deploy:
+    runs-on: ubuntu-latest # Use the latest Ubuntu runner for deployment
+    needs: build # This job will only run after the 'build' job completes successfully
+    environment:
+      name: production # Define a production environment for better visibility and protection rules
+      url: http://your-app-ip:8000 # Replace with your actual application URL for environment tracking
+    steps:
+    - name: Deploy to Server via SSH
+      # This action connects to a remote server via SSH and executes commands.
+      # SSH_HOST, SSH_USERNAME, and SSH_PRIVATE_KEY should be stored as GitHub Secrets.
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          echo "Pulling latest Docker image..."
+          # Pull the newly built image from Docker Hub
+          docker pull ${{ secrets.DOCKER_USERNAME }}/itsm-forecaster:latest
+          
+          echo "Stopping existing container (if any)..."
+          # Stop and remove the old container gracefully. '|| true' prevents script from failing if container doesn't exist.
+          docker stop itsm-forecaster-app || true
+          docker rm itsm-forecaster-app || true
+          
+          echo "Starting new container..."
+          # Run a new Docker container in detached mode (-d).
+          # Assign a name to the container (--name).
+          # Map port 8000 on the host to port 8000 in the container (-p).
+          # Optional: Mount a volume for persistent models. If you want models trained
+          # via the /retrain endpoint to persist across container restarts,
+          # uncomment the line below and replace /path/to/persistent/models
+          # with an actual directory on your server.
+          # -v /path/to/persistent/models:/app/app/models \
+          docker run -d --name itsm-forecaster-app -p 8000:8000 \
+            ${{ secrets.DOCKER_USERNAME }}/itsm-forecaster:latest
+          
+          echo "Deployment complete!"
+
