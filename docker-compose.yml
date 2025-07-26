@@ -1,0 +1,45 @@
+    version: '3.8'
+
+    services:
+      fastapi-app:
+        build: .
+        container_name: forecasting-api-app
+        ports:
+          - "8000:8000"
+        # Mount the models directory to persist models outside the container
+        volumes:
+          - ./models:/app/models
+        restart: unless-stopped
+
+      prometheus:
+        image: prom/prometheus:latest
+        container_name: prometheus-server
+        ports:
+          - "9090:9090"
+        volumes:
+          - ./prometheus.yml:/etc/prometheus/prometheus.yml
+          - prometheus_data:/prometheus # Persistent storage for Prometheus data
+        command:
+          - '--config.file=/etc/prometheus/prometheus.yml'
+          - '--storage.tsdb.path=/prometheus'
+          - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+          - '--web.console.templates=/usr/share/prometheus/consoles'
+        depends_on:
+          - fastapi-app
+        restart: unless-stopped
+
+      grafana:
+        image: grafana/grafana:latest
+        container_name: grafana-dashboard
+        ports:
+          - "3000:3000"
+        volumes:
+          - grafana_data:/var/lib/grafana # Persistent storage for Grafana data
+        depends_on:
+          - prometheus
+        restart: unless-stopped
+
+    volumes:
+      prometheus_data:
+      grafana_data:
+    
