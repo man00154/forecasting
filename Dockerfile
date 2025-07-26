@@ -41,3 +41,5 @@ EXPOSE 8000
 # '--host 0.0.0.0' makes the server accessible from outside the container.
 # '--port 8000' specifies the port the server listens on.
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# ... other Dockerfile instructions (e.g., FROM, WORKDIR, COPY, RUN pip install -r requirements.txt)
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
