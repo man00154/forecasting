@@ -1,13 +1,16 @@
-# prometheus.yml
+# C:\forecasting\prometheus.yml
 global:
   scrape_interval: 15s # How frequently Prometheus will scrape targets
 
 scrape_configs:
-  # Configuration for scraping metrics from your FastAPI application
-  - job_name: 'fastapi_app'
-    # metrics_path defaults to /metrics, which is where our FastAPI app exposes them
+  - job_name: 'fastapi-forecasting-app'
+    # metrics_path defaults to /metrics
     # scheme defaults to http
     static_configs:
-      # Replace 'localhost:8000' with the actual host and port of your FastAPI app.
-      # If running in Docker Compose, this would be the service name (e.g., 'fastapi_service:8000').
-      - targets: ['localhost:8000']
+      # If running Prometheus and your FastAPI app directly on the same host (e.g., your local machine)
+      # - targets: ['localhost:8000']
+
+      # If your FastAPI app is in a Docker container and Prometheus is on the host,
+      # 'host.docker.internal' resolves to the host's IP address from within a Docker container.
+      # If Prometheus is also in a Docker container, you'd use the service name if they are in the same Docker network.
+      - targets: ['host.docker.internal:8000'] # Or 'localhost:8000' if not using Docker Desktop's special DNS
