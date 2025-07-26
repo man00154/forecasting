@@ -1,45 +1,24 @@
 # Dockerfile
-# Use an official Python runtime as a parent image
+# Use a lightweight Python base image
 FROM python:3.9-slim-buster
 
 # Set the working directory in the container
 WORKDIR /app
 
-# Install system dependencies required for Prophet and other packages.
-# 'build-essential', 'gcc', 'python3-dev', 'musl-dev' are crucial for
-# compiling 'pystan', a dependency of 'prophet'.
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    build-essential \
-    gcc \
-    python3-dev \
-    musl-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy the requirements file into the container
+# Copy only the requirements file first to leverage Docker's caching
 COPY requirements.txt .
 
-# Install any needed packages specified in requirements.txt
-# --no-cache-dir reduces the size of the Docker image by not storing build artifacts
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the ITSM data file from the host to the container's /app directory
-COPY ITSM_data.csv .
+# Copy the rest of your application code
+# This includes app.py, your trained model (e.g., forecast_model.pkl),
+# and ITSM_data.csv if your app needs it at runtime.
+COPY . .
 
-# Copy the application code from the host's 'app/' directory to the container's '/app/app/'
-COPY app/ ./app/
-
-# Create a directory for models if it doesn't exist.
-# This is where trained models will be saved.
-RUN mkdir -p app/models
-
-# Make port 8000 available to the world outside this container
+# Expose the port FastAPI will run on
 EXPOSE 8000
 
-# Define the command to run the uvicorn server when the container launches.
-# 'app.main:app' refers to the 'app' object in 'main.py' inside the 'app' directory.
-# '--host 0.0.0.0' makes the server accessible from outside the container.
-# '--port 8000' specifies the port the server listens on.
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-# ... other Dockerfile instructions (e.g., FROM, WORKDIR, COPY, RUN pip install -r requirements.txt)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Command to run your FastAPI application using Uvicorn
+# The --host 0.0.0.0 is crucial for accessibility from outside the container
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
