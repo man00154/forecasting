@@ -1,0 +1,26 @@
+# .dockerignore
+# Ignore Python cache directories and compiled files
+__pycache__/
+*.pyc
+
+# Ignore log files
+*.log
+
+# Ignore Git related files and directories
+.git/
+.gitignore
+
+# Ignore virtual environment directories
+.venv/
+env/
+
+# Ignore SQLite database files (if any are created)
+*.sqlite3
+
+# Ignore output plot images
+*.png
+
+# Ignore the models directory on the host machine.
+# The Dockerfile explicitly creates 'app/models' inside the container,
+# and models will be saved there or loaded from a mounted volume.
+app/models/
